@@ -1,0 +1,1 @@
+ /Users/bachtata/Documents/GitHub/chat_app/.dart_tool/flutter_build/17bfe0581c882ecb551fef94d510c060/native_assets.yaml: 

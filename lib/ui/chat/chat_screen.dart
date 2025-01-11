@@ -1,4 +1,4 @@
-import 'dart:io';
+// import 'dart:io';
 
 import 'package:chat_app/core/sevices/auth_service.dart';
 import 'package:chat_app/core/sevices/chat_service.dart';
@@ -107,9 +107,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).unfocus(); // Close keyboard when tapping outside
+        FocusScope.of(context).unfocus();
         setState(() {
-          _showEmojiPicker = false; // Also close emoji picker
+          _showEmojiPicker = false;
         });
       },
       child: Scaffold(

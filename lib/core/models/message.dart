@@ -13,6 +13,16 @@ class Message {
     required this.timestamp,
   });
 
+  factory Message.fromJson(Map<String, dynamic> data) {
+    return Message(
+      senderID: data['senderID'],
+      senderEmail: data['senderEmail'],
+      receiverID: data['receiverID'],
+      message: data['message'],
+      timestamp: data['timestamp'].toDate(),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'senderID': senderID,

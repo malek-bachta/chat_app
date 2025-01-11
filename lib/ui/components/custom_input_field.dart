@@ -9,7 +9,7 @@ class CustomInputField extends StatelessWidget {
   final Function? toggleVisibility;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? contentPadding;
-  final Widget? suffixIcon; // Updated to accept any Widget
+  final Widget? suffixIcon;
   final bool isParagraph;
   final bool isEmail;
   final String? prefixIcon;
@@ -100,7 +100,7 @@ class CustomInputField extends StatelessWidget {
           ),
           floatingLabelBehavior:
               floatingLabelBehavior ?? FloatingLabelBehavior.auto,
-          suffixIcon: suffixIcon, // Ensures the suffix icon is displayed
+          suffixIcon: suffixIcon, 
           errorText: errorText,
           errorStyle: TextStyle(
             color: Theme.of(context).colorScheme.error,

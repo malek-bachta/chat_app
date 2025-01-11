@@ -1,9 +1,12 @@
-import 'package:chat_app/core/sevices/chat_service.dart';
-import 'package:chat_app/ui/authentication/login.dart';
-import 'package:chat_app/ui/chat/chat_screen.dart';
-import 'package:chat_app/ui/components/user_tile.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:chat_app/core/sevices/auth_service.dart';
+import 'package:provider/provider.dart';
+
+import '../core/view_models/auth_provider.dart';
+import '../core/view_models/chat_provider.dart';
+import 'chat/chat_screen.dart';
+import 'components/user_tile.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,77 +16,55 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final AuthService _authService = AuthService();
-  final ChatService _chatService = ChatService();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ChatProvider>(context, listen: false).fetchUsers();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final chatProvider = Provider.of<ChatProvider>(context);
+
     return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.tertiary,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.tertiary,
-          actions: [
-            IconButton(
-              icon: const Icon(
-                Icons.logout,
-                color: Colors.red,
-              ),
-              onPressed: () async {
-                await _authService.signOut();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginView(),
-                  ),
-                  (route) => false,
-                );
+      appBar: AppBar(
+        title: const Text('Messenger'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: () async {
+              await Provider.of<AuthenticationProvider>(context, listen: false).logout();
+            },
+          ),
+        ],
+      ),
+      body: chatProvider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: chatProvider.users.length,
+              itemBuilder: (context, index) {
+                final user = chatProvider.users[index];
+                if (user['uid'] != FirebaseAuth.instance.currentUser?.uid) {
+                  return UserTile(
+                    text: user['userName'],
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ChatScreen(
+                            receiverUserName: user['userName'],
+                            receiverID: user['uid'],
+                            receiverEmail: user['email'],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                return Container(); // Skip current user
               },
             ),
-          ],
-          title: const Text(
-            'Messenger',
-          ),
-        ),
-        body: _buildUserList());
-  }
-
-  Widget _buildUserList() {
-    return StreamBuilder(
-        stream: _chatService.getUsersStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-          return ListView(
-            children: snapshot.data!
-                .map<Widget>(
-                    (userData) => _buildUserListItem(userData, context))
-                .toList(),
-          );
-        });
-  }
-
-  Widget _buildUserListItem(
-      Map<String, dynamic> userData, BuildContext context) {
-    if (userData['uid'] != _authService.getCurrentUser()!.uid) {
-      return UserTile(
-        text: userData['userName'],
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                receiverUserName: userData['userName'],
-                receiverID: userData['uid'],
-                receiverEmail: userData['email'],
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      return Container(); // Placeholder for user tile
-    }
+    );
   }
 }

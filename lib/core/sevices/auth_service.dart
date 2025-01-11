@@ -58,6 +58,11 @@ class AuthService {
     await FirebaseAuth.instance.signOut();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
+    // Clear the saved email if "Remember Me" is not checked
+    final rememberMe = prefs.getBool('rememberMe') ?? false;
+    if (!rememberMe) {
+      await prefs.remove('savedEmail');
+    }
   }
 
   Future<String?> getSavedEmail() async {
