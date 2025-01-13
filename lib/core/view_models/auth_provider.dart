@@ -80,8 +80,9 @@ class AuthenticationProvider with ChangeNotifier {
   Future<void> logout() async {
     await _auth.signOut();
     _user = null;
-    _isRememberMe = false;
-    await _clearSavedData();
+    if (!_isRememberMe) {
+      await _clearSavedData();
+    }
     notifyListeners();
   }
 

@@ -4,7 +4,6 @@ import 'package:chat_app/ui/home_page.dart';
 import 'package:chat_app/ui/authentication/register.dart';
 import 'package:chat_app/ui/components/custom_button.dart';
 import 'package:chat_app/ui/components/custom_input_field.dart';
-
 import '../../core/view_models/auth_provider.dart';
 
 class LoginView extends StatefulWidget {
@@ -71,106 +70,118 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthenticationProvider>(builder: (
-      context,
-      authProvider,
-      child,
-    ) {
-      return Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.tertiary,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.tertiary,
-          title: const Text('Login'),
-          elevation: 0,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                CustomInputField(
-                  controller: _emailController,
-                  label: 'Email',
-                  isEmail: true,
-                  errorText: _emailErrorText,
-                  backgroundColor: Colors.white,
-                ),
-                const SizedBox(height: 8.0),
-                CustomInputField(
-                  controller: _passwordController,
-                  label: 'Password',
-                  obscureText: !_isPasswordVisible,
-                  toggleVisibility: () {
-                    setState(() => _isPasswordVisible = !_isPasswordVisible);
-                  },
-                  errorText: _passwordErrorText,
-                  backgroundColor: Colors.white,
-                  suffixIcon: GestureDetector(
-                    onTap: () {
-                      setState(() => _isPasswordVisible = !_isPasswordVisible);
-                    },
-                    child: Tooltip(
-                      message: _isPasswordVisible
-                          ? 'Hide Password'
-                          : 'Show Password',
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(
-                              opacity: animation, child: child);
+    final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
+
+    return Consumer<AuthenticationProvider>(
+      builder: (context, authProvider, child) {
+        return Scaffold(
+          body: Center(
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Icon(Icons.lock_outline, size: 64, color: primaryColor),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Welcome Back!",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    CustomInputField(
+                      controller: _emailController,
+                      label: 'Email',
+                      isEmail: true,
+                      errorText: _emailErrorText,
+                      backgroundColor: Colors.grey.shade200,
+                    ),
+                    const SizedBox(height: 8.0),
+                    CustomInputField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      obscureText: !_isPasswordVisible,
+                      toggleVisibility: () {
+                        setState(
+                            () => _isPasswordVisible = !_isPasswordVisible);
+                      },
+                      errorText: _passwordErrorText,
+                      backgroundColor: Colors.grey.shade200,
+                      suffixIcon: GestureDetector(
+                        onTap: () {
+                          setState(
+                              () => _isPasswordVisible = !_isPasswordVisible);
                         },
-                        child: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          key: ValueKey<bool>(_isPasswordVisible),
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 24,
+                        child: Tooltip(
+                          message: _isPasswordVisible
+                              ? 'Hide Password'
+                              : 'Show Password',
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            transitionBuilder: (child, animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              );
+                            },
+                            child: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              key: ValueKey<bool>(_isPasswordVisible),
+                              color: primaryColor,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 12.0,
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    Checkbox(
-                      value: authProvider.isRememberMe,
-                      onChanged: (value) {
-                        authProvider.setRememberMe(value!);
-                      },
-                    ),
-                    const Text('Remember me'),
-                  ],
-                ),
-                const SizedBox(height: 24.0),
-                authProvider.isLoading
-                    ? const CircularProgressIndicator()
-                    : DynamicFilledButton(
-                        buttonText: 'Login',
-                        onPressed: () => _login(authProvider),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 12.0,
                       ),
-                const SizedBox(height: 16.0),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account?"),
-                    TextButton(
-                      onPressed: _navigateToRegisterScreen,
-                      child: const Text('Register'),
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Checkbox(
+                          value: authProvider.isRememberMe,
+                          onChanged: (value) {
+                            authProvider.setRememberMe(value!);
+                          },
+                        ),
+                        const Text('Remember me'),
+                      ],
+                    ),
+                    const SizedBox(height: 24.0),
+                    authProvider.isLoading
+                        ? const CircularProgressIndicator()
+                        : DynamicFilledButton(
+                            buttonText: 'Login',
+                            onPressed: () => _login(authProvider),
+                          ),
+                    const SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Don't have an account?"),
+                        TextButton(
+                          onPressed: _navigateToRegisterScreen,
+                          child: const Text('Register'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 }
