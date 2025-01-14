@@ -73,30 +73,6 @@ class ChatProvider with ChangeNotifier {
     return ids.join('_');
   }
 
-  /// Delete a message
-  Future<void> deleteMessage(String chatRoomID, String messageID) async {
-    try {
-      await _fireStore.collection('chat_rooms').doc(chatRoomID).update({
-        'messages': FieldValue.arrayRemove([
-          {'id': messageID}
-        ])
-      });
-    } catch (e) {
-      logError('deleteMessage', e.toString());
-    }
-  }
-
-  /// Fetch a single user's data
-  Future<Map<String, dynamic>?> getUserData(String userID) async {
-    try {
-      final doc = await _fireStore.collection('Users').doc(userID).get();
-      return doc.data();
-    } catch (e) {
-      logError('getUserData', e.toString());
-      return null;
-    }
-  }
-
   /// Log error utility
   void logError(String functionName, String error) {
     print('$functionName: $error');
@@ -132,7 +108,6 @@ class ChatProvider with ChangeNotifier {
     }
     return 'No messages yet';
   }
-  
 
   Future<void> sendchatMessage(
     String uid1,

@@ -94,15 +94,30 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
+  bool _isMessageValid(String message) {
+    final trimmedMessage = message.trim();
+
+    if (trimmedMessage.isEmpty) {
+      return false;
+    } else if (trimmedMessage.length > 500) {
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _sendMessage(
     ChatMessage chatMessage,
     ChatProvider chatProvider,
   ) async {
+    final trimmedMessageText = chatMessage.text.trim();
+
+    if (trimmedMessageText.isEmpty) return;
     final message = Conversation(
       senderID: chatUser.uid,
       senderEmail: chatUser.email!,
       receiverID: widget.receiverID,
-      message: chatMessage.text,
+      message: trimmedMessageText,
       timestamp: Timestamp.fromDate(chatMessage.createdAt),
     );
 
@@ -181,7 +196,15 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
           currentUser: currentUser!,
           onSend: (message) {
-            _sendMessage(message, chatProvider);
+            final trimmedText = message.text.trim();
+            if (_isMessageValid(trimmedText)) {
+              final trimmedMessage = ChatMessage(
+                text: trimmedText,
+                user: currentUser!,
+                createdAt: message.createdAt,
+              );
+              _sendMessage(trimmedMessage, chatProvider);
+            }
           },
           messages: messages,
         );

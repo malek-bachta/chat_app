@@ -1,5 +1,3 @@
-// import 'package:chat_app/core/services/notification_service.dart';
-// import 'package:chat_app/core/services/notification_helper.dart';
 import 'package:chat_app/themes/light_mode.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +9,6 @@ import 'package:chat_app/firebase_options.dart';
 import 'core/services/notification_service.dart';
 import 'core/view_models/auth_provider.dart';
 import 'core/view_models/chat_provider.dart';
-// import 'ui/notification_example.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,11 +16,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await NotificationService.instance.init();
-
-// Initialize Notifications
-  // final notificationsHelper = NotificationsHelper();
-  // await notificationsHelper.initNotifications();
-  // notificationsHelper.handleBackgroundNotifications();
 
   runApp(
     MultiProvider(
@@ -47,7 +39,6 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: lightMode,
         home: authProvider.user != null ? const HomePage() : const LoginView(),
-        // home: const NotificationExample(),
       );
     });
   }

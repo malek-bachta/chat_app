@@ -216,32 +216,4 @@ class NotificationService {
     }
   }
 
-  // Future<void> sendRemoteNotification({
-  //   required String deviceToken,
-  //   required String userName,
-  //   required String body,
-  //   required String receiverId,
-  //   required String serverKey,
-  // }) async {
-  //   try {
-  //     const url =
-  //         "https://fcm.googleapis.com/v1/projects/YOUR_PROJECT_ID/messages:send";
-  //     Dio dio = Dio();
-  //     dio.options.headers['Content-Type'] = 'application/json';
-  //     dio.options.headers['Authorization'] = 'Bearer $serverKey';
-
-  //     final response = await dio.post(
-  //       url,
-  //       data: getRemoteMessageBody(
-  //         deviceToken: deviceToken,
-  //         userName: userName,
-  //         body: body,
-  //         receiverId: receiverId,
-  //       ),
-  //     );
-  //     print("Notification sent: ${response.statusCode}");
-  //   } catch (e) {
-  //     print("Error sending notification: $e");
-  //   }
-  // }
 }

@@ -88,34 +88,18 @@ class AuthenticationProvider with ChangeNotifier {
     }
   }
 
-  // Future<void> _updateDeviceToken() async {
-  //   if (_user != null) {
-  //     try {
-  //       final token = await _messaging.getToken();
-  //       if (token != null) {
-  //         await _firestore.collection('Users').doc(_user!.uid).update({
-  //           'deviceToken': token,
-  //         });
-  //       }
-  //     } catch (e) {
-  //       print('Error updating device token: $e');
-  //     }
-  //   }
-  // }
 
   Future<void> _updateDeviceToken() async {
   if (_user != null) {
     try {
       final token = await _messaging.getToken();
       if (token != null) {
-        // Store the token in Firestore
         await _firestore.collection('Users').doc(_user!.uid).update({
           'deviceToken': token,
         });
 
         print('Device token updated in Firestore: $token');
 
-        // Optional: Listen for token refresh
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
           await _firestore.collection('Users').doc(_user!.uid).update({
             'deviceToken': newToken,

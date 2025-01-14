@@ -16,38 +16,22 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  ChatProvider? _chatProvider;
+
   @override
   void initState() {
     super.initState();
 
-    // FirebaseMessaging.onMessage.listen((message) {
-    //   if (message.notification == null) return;
-    //   showDialog(
-    //       context: context,
-    //       builder: (context) => AlertDialog(
-    //             title: Text(message.notification!.title ?? ''),
-    //             content: Text(message.notification!.body ?? ''),
-    //             actions: [
-    //               TextButton(
-    //                 onPressed: () => Navigator.of(context).pop(),
-    //                 child: const Text('Close'),
-    //               ),
-    //             ],
-    //           ));
-    // });
-
-    //widgetbinding ensures the provided callback runs only after the first build is completed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-      chatProvider.fetchUsers();
-      chatProvider.updateUserStatus(true);
+      _chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      _chatProvider?.fetchUsers();
+      _chatProvider?.updateUserStatus(true);
     });
   }
 
   @override
   void dispose() {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    chatProvider.updateUserStatus(false);
+    _chatProvider?.updateUserStatus(false);
     super.dispose();
   }
 
@@ -130,7 +114,7 @@ class _HomePageState extends State<HomePage> {
 
                           return FutureBuilder<String>(
                             future: chatProvider.getLastMessage(
-                              currentUserId!,
+                              currentUserId ?? '',
                               user['uid'],
                             ),
                             builder: (context, snapshot) {
@@ -141,7 +125,7 @@ class _HomePageState extends State<HomePage> {
                                 lastMessage: lastMessage,
                                 onTap: () async {
                                   await chatProvider.ensureChatExists(
-                                    currentUserId,
+                                    currentUserId ?? '',
                                     user['uid'],
                                   );
                                   Navigator.of(context).push(

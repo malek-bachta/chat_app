@@ -1,7 +1,4 @@
-// import 'dart:convert';
-
 import 'package:dio/dio.dart';
-// import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -52,19 +49,6 @@ class NotificationsHelper {
           'Notification received: ${message.notification?.title} - ${message.notification?.body}');
     }
   }
-
-  // void handleMessages(RemoteMessage? message) {
-  //   if (message != null) {
-  //     // navigatorKey.currentState?.pushNamed(NotificationsScreen.routeName, arguments: message);
-  //     Fluttertoast.showToast(
-  //       msg: 'on Background Message notification',
-  //       toastLength: Toast.LENGTH_SHORT,
-  //       gravity: ToastGravity.BOTTOM,
-  //       timeInSecForIosWeb: 1,
-  //       fontSize: 16.0,
-  //     );
-  //   }
-  // }
 
   void handleBackgroundNotifications() {
     FirebaseMessaging.instance.getInitialMessage().then(handleMessages);
