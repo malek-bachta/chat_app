@@ -1,62 +1,72 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-//this to make sure tus global function will not be removed by tree shaking
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  NotificationService.instance.setupFlutterLocalNotification();
-  NotificationService.instance.showNotification(message);
-}
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+import 'package:googleapis_auth/auth_io.dart' as auth;
 
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 
-  final _messaging = FirebaseMessaging.instance;
-  final _localNotification = FlutterLocalNotificationsPlugin();
-
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotification =
+      FlutterLocalNotificationsPlugin();
   bool _isFlutterLocalNotificationInitialized = false;
 
-  final String channelDescription =
-      'This channel is used for important notifications.';
+  final AndroidNotificationChannel channel = const AndroidNotificationChannel(
+    'high_importance_channel',
+    'High Importance Notifications',
+    description: 'This channel is used for important notifications.',
+    importance: Importance.high,
+  );
 
   Future<void> init() async {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await _requestPermission();
     await _setupMessageHandlers();
-    final token = await _messaging.getToken();
-    print(
-        ' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: $token');
+    await _setupFlutterLocalNotification();
+
+    String? deviceToken = await _firebaseMessaging.getToken();
+    if (deviceToken != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('deviceToken', deviceToken);
+      print("Firebase Messaging Token: $deviceToken");
+    }
+
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  Future<String?> getDeviceTokenFromFirestore(String userId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('Users')
+          .doc(userId)
+          .get();
+      if (doc.exists) {
+        return doc.data()?['deviceToken'] as String?;
+      }
+    } catch (e) {
+      print('Error fetching device token from Firestore: $e');
+    }
+    return null;
   }
 
   Future<void> _requestPermission() async {
     try {
-      final settings = await _messaging.requestPermission(
+      final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
-        provisional: false,
         sound: true,
-        announcement: false,
-        carPlay: false,
-        criticalAlert: false,
       );
-
       print('Permission granted: ${settings.authorizationStatus}');
     } catch (e) {
       print('Error requesting permission: $e');
     }
   }
 
-  Future<void> setupFlutterLocalNotification() async {
-    if (_isFlutterLocalNotificationInitialized) {
-      return Future.value();
-    }
-    const channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
-    );
+  Future<void> _setupFlutterLocalNotification() async {
+    if (_isFlutterLocalNotificationInitialized) return;
 
     await _localNotification
         .resolvePlatformSpecificImplementation<
@@ -66,79 +76,172 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    //ios setup
     final initializationSettingsDarwin = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-        onDidReceiveLocalNotification: (id, title, body, payload) async {
-          print('onDidReceiveLocalNotification');
-          //handle ios foreground notification
-        });
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
     final initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
     );
 
-    await _localNotification.initialize(initializationSettings,
-        onDidReceiveNotificationResponse: (details) {
-      print('onDidReceiveNotificationResponse');
-    });
+    await _localNotification.initialize(initializationSettings);
     _isFlutterLocalNotificationInitialized = true;
   }
 
-  Future<void> showNotification(RemoteMessage message) async {
+  Future<void> _setupMessageHandlers() async {
+    FirebaseMessaging.onMessage.listen((message) {
+      // _showLocalNotification(message);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      // _handleNotificationClick(message);
+      _showLocalNotification(message);
+    });
+
+    final initialMessage = await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      _handleNotificationClick(initialMessage);
+    }
+  }
+
+  Future<void> _showLocalNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
+    AndroidNotification? android = notification?.android;
+
     if (notification != null && android != null) {
       await _localNotification.show(
         notification.hashCode,
         notification.title,
         notification.body,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'High Importance Notifications',
-            channelDescription:
-                'This channel is used for important notifications.',
+            channel.id,
+            channel.name,
+            channelDescription: channel.description,
             importance: Importance.high,
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
           ),
-          iOS: DarwinNotificationDetails(
+          iOS: const DarwinNotificationDetails(
             presentAlert: true,
             presentBadge: true,
             presentSound: true,
           ),
         ),
-        payload: message.data.toString(),
       );
     }
   }
 
-  Future<void> _setupMessageHandlers() async {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // print('onMessage: $message');
-      showNotification(message);
-    });
+  void _handleNotificationClick(RemoteMessage message) {
+    print('Notification clicked: ${message.notification?.title}');
+  }
 
-    //background message
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
+  static Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    print('Background message received: ${message.notification?.title}');
+  }
 
-    //opened app
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleBackgroundMessage(initialMessage);
-      // print('onLaunch: $initialMessage');
+  Future<String> getAccessToken(
+      Map<String, dynamic> serviceAccountJson, List<String> scopes) async {
+    try {
+      http.Client client = await auth.clientViaServiceAccount(
+          auth.ServiceAccountCredentials.fromJson(serviceAccountJson), scopes);
+
+      auth.AccessCredentials credentials =
+          await auth.obtainAccessCredentialsViaServiceAccount(
+              auth.ServiceAccountCredentials.fromJson(serviceAccountJson),
+              scopes,
+              client);
+
+      client.close();
+      print("Access Token: ${credentials.accessToken.data}");
+      return credentials.accessToken.data;
+    } catch (e) {
+      print("Error getting access token: $e");
+      return "";
     }
   }
 
-  void _handleBackgroundMessage(RemoteMessage message) {
-    if (message.data['type'] == 'chat') {
-      // handle chat message
-    } else if (message.data['type'] == 'notification') {
-      // handle notification message
+  Map<String, dynamic> getRemoteMessageBody({
+    required String deviceToken,
+    required String userName,
+    required String body,
+    required String receiverId,
+  }) {
+    return {
+      "message": {
+        "token": deviceToken,
+        "notification": {"title": userName, "body": body},
+        "data": {"receiverId": receiverId},
+      }
+    };
+  }
+
+  Future<void> sendRemoteNotification({
+    required String receiverId,
+    required String userName,
+    required String body,
+    required String serverKey,
+  }) async {
+    try {
+      final deviceToken = await getDeviceTokenFromFirestore(receiverId);
+      if (deviceToken == null) {
+        print('No device token found for user: $receiverId');
+        return;
+      }
+
+      const url =
+          "https://fcm.googleapis.com/v1/projects/YOUR_PROJECT_ID/messages:send";
+
+      Dio dio = Dio();
+      dio.options.headers['Content-Type'] = 'application/json';
+      dio.options.headers['Authorization'] = 'Bearer $serverKey';
+
+      final response = await dio.post(
+        url,
+        data: getRemoteMessageBody(
+          deviceToken: deviceToken,
+          userName: userName,
+          body: body,
+          receiverId: receiverId,
+        ),
+      );
+
+      print("Notification sent: ${response.statusCode}");
+    } catch (e) {
+      print("Error sending notification: $e");
     }
   }
+
+  // Future<void> sendRemoteNotification({
+  //   required String deviceToken,
+  //   required String userName,
+  //   required String body,
+  //   required String receiverId,
+  //   required String serverKey,
+  // }) async {
+  //   try {
+  //     const url =
+  //         "https://fcm.googleapis.com/v1/projects/YOUR_PROJECT_ID/messages:send";
+  //     Dio dio = Dio();
+  //     dio.options.headers['Content-Type'] = 'application/json';
+  //     dio.options.headers['Authorization'] = 'Bearer $serverKey';
+
+  //     final response = await dio.post(
+  //       url,
+  //       data: getRemoteMessageBody(
+  //         deviceToken: deviceToken,
+  //         userName: userName,
+  //         body: body,
+  //         receiverId: receiverId,
+  //       ),
+  //     );
+  //     print("Notification sent: ${response.statusCode}");
+  //   } catch (e) {
+  //     print("Error sending notification: $e");
+  //   }
+  // }
 }

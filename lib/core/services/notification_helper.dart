@@ -1,4 +1,7 @@
+// import 'dart:convert';
+
 import 'package:dio/dio.dart';
+// import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -50,12 +53,26 @@ class NotificationsHelper {
     }
   }
 
+  // void handleMessages(RemoteMessage? message) {
+  //   if (message != null) {
+  //     // navigatorKey.currentState?.pushNamed(NotificationsScreen.routeName, arguments: message);
+  //     Fluttertoast.showToast(
+  //       msg: 'on Background Message notification',
+  //       toastLength: Toast.LENGTH_SHORT,
+  //       gravity: ToastGravity.BOTTOM,
+  //       timeInSecForIosWeb: 1,
+  //       fontSize: 16.0,
+  //     );
+  //   }
+  // }
+
   void handleBackgroundNotifications() {
     FirebaseMessaging.instance.getInitialMessage().then(handleMessages);
     FirebaseMessaging.onMessageOpenedApp.listen(handleMessages);
   }
+  
 
-  Future<String?> getAccessToken() async {
+  Future<String> getAccessToken() async {
     final serviceAccountJson = {
       "type": "service_account",
       "project_id": "chat-technical-test-b78c8",
@@ -91,25 +108,31 @@ class NotificationsHelper {
               client);
 
       client.close();
+      print(
+          "===================Device FirebaseMessaging Token===================="
+          "===================Device FirebaseMessaging Token====================");
+
       print("Access Token: ${credentials.accessToken.data}");
       return credentials.accessToken.data;
     } catch (e) {
       print("Error getting access token: $e");
-      return null;
+      return "";
     }
   }
 
   Map<String, dynamic> getBody({
-    required String fcmToken,
-    required String title,
-    required String body,
-    required String userId,
-    String? type,
+    required String deviceToken,
+    required String userName,
+    required String message,
+    required String receiverId,
   }) {
     return {
       "message": {
-        "token": fcmToken,
-        "notification": {"title": title, "body": body},
+        "token": deviceToken,
+        "notification": {
+          "title": userName,
+          "body": message,
+        },
         "android": {
           "notification": {
             "notification_priority": "PRIORITY_MAX",
@@ -121,26 +144,20 @@ class NotificationsHelper {
             "aps": {"content_available": true}
           }
         },
-        "data": {
-          "type": type,
-          "id": userId,
-          "click_action": "FLUTTER_NOTIFICATION_CLICK"
-        }
+        "data": {"id": receiverId, "click_action": "FLUTTER_NOTIFICATION_CLICK"}
       }
     };
   }
 
-  Future<void> sendNotifications({
-    required String fcmToken,
-    required String title,
-    required String body,
-    required String userId,
-    String? type,
+  Future<void> sendNotification({
+    required String? deviceToken,
+    required String userName,
+    required String message,
+    required String receiverId,
   }) async {
     try {
       var serverKeyAuthorization = await getAccessToken();
 
-      // change your project id
       const String urlEndPoint =
           "https://fcm.googleapis.com/v1/projects/chat-technical-test-b78c8/messages:send";
 
@@ -151,15 +168,13 @@ class NotificationsHelper {
       var response = await dio.post(
         urlEndPoint,
         data: getBody(
-          userId: userId,
-          fcmToken: fcmToken,
-          title: title,
-          body: body,
-          type: type ?? "message",
+          receiverId: receiverId,
+          deviceToken: deviceToken!,
+          userName: userName,
+          message: message,
         ),
       );
 
-      // Print response status code and body for debugging
       print('Response Status Code: ${response.statusCode}');
       print('Response Data: ${response.data}');
     } catch (e) {

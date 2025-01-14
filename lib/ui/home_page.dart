@@ -20,6 +20,22 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
+    // FirebaseMessaging.onMessage.listen((message) {
+    //   if (message.notification == null) return;
+    //   showDialog(
+    //       context: context,
+    //       builder: (context) => AlertDialog(
+    //             title: Text(message.notification!.title ?? ''),
+    //             content: Text(message.notification!.body ?? ''),
+    //             actions: [
+    //               TextButton(
+    //                 onPressed: () => Navigator.of(context).pop(),
+    //                 child: const Text('Close'),
+    //               ),
+    //             ],
+    //           ));
+    // });
+
     //widgetbinding ensures the provided callback runs only after the first build is completed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
@@ -131,9 +147,10 @@ class _HomePageState extends State<HomePage> {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (context) => ChatScreen(
-                                        receiverUserName: user['userName'],
+                                        receiverUserName: user['email'],
                                         receiverID: user['uid'],
                                         receiverEmail: user['email'],
+                                        receiverToken: user['deviceToken'],
                                       ),
                                     ),
                                   );

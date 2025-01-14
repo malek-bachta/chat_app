@@ -48,7 +48,7 @@ class ChatProvider2 with ChangeNotifier {
       final currentUserID = user.uid;
       final currentUserEmail = user.email!;
       final timestamp = Timestamp.now();
-      Message newMessage = Message(
+      Conversation newMessage = Conversation(
         senderID: currentUserID,
         senderEmail: currentUserEmail,
         receiverID: receiverID,

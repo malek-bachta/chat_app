@@ -42,12 +42,12 @@ class _NotificationExampleState extends State<NotificationExample> {
           Text("Check your notifications"),
           TextButton(
             onPressed: () async {
-              await _notificationsHelper.sendNotifications(
-                fcmToken:
+              await _notificationsHelper.sendNotification(
+                deviceToken:
                     "cVhhLubsRVCQxAsW4DMWUl:APA91bHIp8jjzs2nvorQSCFlGBcL8FpU1H9zURvPda0OxQlXD8vdn-_mIhoWd96eM0Y3g0Uv3W1_XmuysobK4X8dAjfdoTaBhJcp3OZK9883lJghHlI8164", // Replace with a real token
-                title: "New Offer",
-                body: "Check out the latest offers in your area!",
-                userId: "12345",
+                userName: "New Offer",
+                message: "Check out the latest offers in your area!",
+                receiverId: "12345",
               );
             },
             child: Text("Send Notification"),

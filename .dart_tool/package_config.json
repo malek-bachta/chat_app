@@ -26,12 +26,6 @@
       "languageVersion": "2.17"
     },
     {
-      "name": "build_cli_annotations",
-      "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/build_cli_annotations-2.1.0",
-      "packageUri": "lib/",
-      "languageVersion": "2.12"
-    },
-    {
       "name": "cached_network_image",
       "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/cached_network_image-3.4.1",
       "packageUri": "lib/",
@@ -272,12 +266,6 @@
       "languageVersion": "2.12"
     },
     {
-      "name": "flutter_rust_bridge",
-      "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/flutter_rust_bridge-2.7.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.4"
-    },
-    {
       "name": "flutter_test",
       "rootUri": "file:///Users/bachtata/development/flutter/packages/flutter_test",
       "packageUri": "lib/",
@@ -288,12 +276,6 @@
       "rootUri": "file:///Users/bachtata/development/flutter/packages/flutter_web_plugins",
       "packageUri": "lib/",
       "languageVersion": "3.2"
-    },
-    {
-      "name": "freezed_annotation",
-      "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/freezed_annotation-2.4.4",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
     },
     {
       "name": "google_identity_services_web",
@@ -328,12 +310,6 @@
     {
       "name": "intl",
       "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/intl-0.19.0",
-      "packageUri": "lib/",
-      "languageVersion": "3.0"
-    },
-    {
-      "name": "json_annotation",
-      "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/json_annotation-4.9.0",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     },
@@ -514,12 +490,6 @@
     {
       "name": "shared_preferences_windows",
       "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/shared_preferences_windows-2.4.1",
-      "packageUri": "lib/",
-      "languageVersion": "3.3"
-    },
-    {
-      "name": "simple_audio",
-      "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/simple_audio-2.0.4",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -740,7 +710,7 @@
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2025-01-13T10:07:07.568903Z",
+  "generated": "2025-01-14T09:56:53.375830Z",
   "generator": "pub",
   "generatorVersion": "3.5.4",
   "flutterRoot": "file:///Users/bachtata/development/flutter",

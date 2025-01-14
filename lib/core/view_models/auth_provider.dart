@@ -1,11 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class AuthenticationProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   User? _user;
   bool _isLoading = false;
@@ -28,6 +31,10 @@ class AuthenticationProvider with ChangeNotifier {
     _user = _auth.currentUser;
     final prefs = await SharedPreferences.getInstance();
     _isRememberMe = prefs.getBool('rememberMe') ?? false;
+
+    if (_user != null) {
+      await _updateDeviceToken();
+    }
     notifyListeners();
   }
 
@@ -48,6 +55,7 @@ class AuthenticationProvider with ChangeNotifier {
         await _clearSavedData();
       }
 
+      await _updateDeviceToken();
       notifyListeners();
     } catch (e) {
       throw Exception('Login failed: ${e.toString()}');
@@ -63,12 +71,15 @@ class AuthenticationProvider with ChangeNotifier {
         email: email,
         password: password,
       );
-      await _firestore.collection('Users').doc(userCredential.user!.uid).set({
-        'uid': userCredential.user!.uid,
+      _user = userCredential.user;
+
+      await _firestore.collection('Users').doc(_user!.uid).set({
+        'uid': _user!.uid,
         'email': email,
         'userName': email.split('@')[0],
+        'deviceToken': await _messaging.getToken(),
       });
-      _user = userCredential.user;
+
       notifyListeners();
     } catch (e) {
       throw Exception('Registration failed: $e');
@@ -76,6 +87,47 @@ class AuthenticationProvider with ChangeNotifier {
       _setLoading(false);
     }
   }
+
+  // Future<void> _updateDeviceToken() async {
+  //   if (_user != null) {
+  //     try {
+  //       final token = await _messaging.getToken();
+  //       if (token != null) {
+  //         await _firestore.collection('Users').doc(_user!.uid).update({
+  //           'deviceToken': token,
+  //         });
+  //       }
+  //     } catch (e) {
+  //       print('Error updating device token: $e');
+  //     }
+  //   }
+  // }
+
+  Future<void> _updateDeviceToken() async {
+  if (_user != null) {
+    try {
+      final token = await _messaging.getToken();
+      if (token != null) {
+        // Store the token in Firestore
+        await _firestore.collection('Users').doc(_user!.uid).update({
+          'deviceToken': token,
+        });
+
+        print('Device token updated in Firestore: $token');
+
+        // Optional: Listen for token refresh
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+          await _firestore.collection('Users').doc(_user!.uid).update({
+            'deviceToken': newToken,
+          });
+          print('Device token refreshed and updated: $newToken');
+        });
+      }
+    } catch (e) {
+      print('Error updating device token in Firestore: $e');
+    }
+  }
+}
 
   Future<void> logout() async {
     await _auth.signOut();

@@ -3,21 +3,24 @@ import 'package:chat_app/core/models/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../../core/services/notification_helper.dart';
 import '../../core/view_models/chat_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverUserName;
   final String receiverID;
   final String receiverEmail;
+  final String receiverToken;
 
   const ChatScreen({
     super.key,
     required this.receiverUserName,
     required this.receiverID,
     required this.receiverEmail,
+    required this.receiverToken,
   });
 
   @override
@@ -33,9 +36,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   ChatUser? currentUser, otherUser;
 
+  final NotificationsHelper _notificationsHelper = NotificationsHelper();
+
   @override
   void initState() {
     super.initState();
+    _initializeNotifications();
+
     currentUser = ChatUser(
       id: chatUser.uid,
       firstName: chatUser.displayName,
@@ -46,20 +53,72 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
+  String _sanitizeText(String input) {
+    return input.split('@').first.replaceAll(RegExp(r'[^\w\s]'), ' ').trim();
+  }
+
+  Future<void> _initializeNotifications() async {
+    // Initialize notifications
+    await _notificationsHelper.initNotifications();
+
+    // Handle notifications in foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      _handleIncomingNotification(message);
+    });
+
+    // Handle notifications when app is opened from a background state
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleIncomingNotification(message);
+    });
+
+    // Handle background notifications
+    _notificationsHelper.handleBackgroundNotifications();
+  }
+
+  void _handleIncomingNotification(RemoteMessage message) {
+    _notificationsHelper.handleMessages(message);
+
+    if (message.data['type'] == 'chat' &&
+        message.data['senderID'] == widget.receiverID) {
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
   Future<void> _sendMessage(
-      ChatMessage chatmessage, ChatProvider chatprovider) async {
-    Message message = Message(
+    ChatMessage chatMessage,
+    ChatProvider chatProvider,
+  ) async {
+    final message = Conversation(
       senderID: chatUser.uid,
       senderEmail: chatUser.email!,
       receiverID: widget.receiverID,
-      message: chatmessage.text,
-      timestamp: Timestamp.fromDate(chatmessage.createdAt),
+      message: chatMessage.text,
+      timestamp: Timestamp.fromDate(chatMessage.createdAt),
     );
-    await chatprovider.sendchatMessage(
-      chatUser.uid,
-      widget.receiverID,
-      message,
-    );
+
+    await chatProvider.sendchatMessage(
+        chatUser.uid, widget.receiverID, message);
+    String email = widget.receiverEmail;
+    if (email.contains('@gmail.com')) {
+      await _notificationsHelper.sendNotification(
+        deviceToken: widget.receiverToken,
+        receiverId: widget.receiverID,
+        userName: _sanitizeText(chatUser.email!),
+        message: message.message,
+      );
+    }
+
+    _scrollToBottom();
   }
 
   @override
@@ -74,26 +133,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.tertiary,
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.tertiary,
-          title: Text(widget.receiverUserName),
+          title: Text(_sanitizeText(widget.receiverUserName)),
           centerTitle: true,
         ),
         body: Consumer<ChatProvider>(
           builder: (context, chatProvider, child) {
-            return _buildUi(chatProvider);
+            return _buildChatUi(chatProvider);
           },
         ),
       ),
     );
   }
 
-  Widget _buildUi(ChatProvider chatProvider) {
+  Widget _buildChatUi(ChatProvider chatProvider) {
     return StreamBuilder<Chat?>(
       stream: chatProvider.getChatData(chatUser.uid, widget.receiverID),
       builder: (context, snapshot) {
@@ -105,8 +162,10 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             child: Text('An error occurred while loading the chat.'),
           );
         }
+
         final chat = snapshot.data;
-        final messages = _generateChatMessagesList(chat!.messages);
+        final messages = _generateChatMessagesList(chat?.messages ?? []);
+
         return DashChat(
           messageListOptions: const MessageListOptions(
             showFooterBeforeQuickReplies: true,
@@ -114,6 +173,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
           inputOptions: const InputOptions(
             alwaysShowSend: true,
+          ),
+          messageOptions: MessageOptions(
+            showTime: true,
+            currentUserContainerColor: Colors.amber[700]!,
+            containerColor: Theme.of(context).colorScheme.secondary,
           ),
           currentUser: currentUser!,
           onSend: (message) {
@@ -125,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  List<ChatMessage> _generateChatMessagesList(List<Message> messages) {
+  List<ChatMessage> _generateChatMessagesList(List<Conversation> messages) {
     return messages.map((msg) {
       return ChatMessage(
         text: msg.message,
