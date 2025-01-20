@@ -230,6 +230,12 @@
       "languageVersion": "3.0"
     },
     {
+      "name": "flutter_dotenv",
+      "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/flutter_dotenv-5.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "flutter_lints",
       "rootUri": "file:///Users/bachtata/.pub-cache/hosted/pub.dev/flutter_lints-4.0.0",
       "packageUri": "lib/",
@@ -710,7 +716,7 @@
       "languageVersion": "3.5"
     }
   ],
-  "generated": "2025-01-14T22:35:28.945214Z",
+  "generated": "2025-01-20T10:54:08.198389Z",
   "generator": "pub",
   "generatorVersion": "3.5.4",
   "flutterRoot": "file:///Users/bachtata/development/flutter",
