@@ -38,7 +38,9 @@ class MyApp extends StatelessWidget {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: lightMode,
-        home: authProvider.user != null ? const HomePage() : const LoginView(),
+        home: (authProvider.user != null && authProvider.isRememberMe)
+            ? const HomePage()
+            : const LoginView(),
       );
     });
   }

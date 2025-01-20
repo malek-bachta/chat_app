@@ -4,7 +4,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class AuthenticationProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -18,23 +17,25 @@ class AuthenticationProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isRememberMe => _isRememberMe;
 
-  void setRememberMe(bool value) {
-    _isRememberMe = value;
-    notifyListeners();
-  }
-
   AuthenticationProvider() {
-    _loadUser();
+    _initializeUser();
   }
 
-  Future<void> _loadUser() async {
-    _user = _auth.currentUser;
+  Future<void> _initializeUser() async {
     final prefs = await SharedPreferences.getInstance();
     _isRememberMe = prefs.getBool('rememberMe') ?? false;
 
-    if (_user != null) {
-      await _updateDeviceToken();
+    if (_isRememberMe) {
+      final savedEmail = prefs.getString('savedEmail');
+      if (savedEmail != null) {
+        _user = _auth.currentUser;
+      }
     }
+    notifyListeners();
+  }
+
+  void setRememberMe(bool value) {
+    _isRememberMe = value;
     notifyListeners();
   }
 
@@ -88,31 +89,6 @@ class AuthenticationProvider with ChangeNotifier {
     }
   }
 
-
-  Future<void> _updateDeviceToken() async {
-  if (_user != null) {
-    try {
-      final token = await _messaging.getToken();
-      if (token != null) {
-        await _firestore.collection('Users').doc(_user!.uid).update({
-          'deviceToken': token,
-        });
-
-        print('Device token updated in Firestore: $token');
-
-        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-          await _firestore.collection('Users').doc(_user!.uid).update({
-            'deviceToken': newToken,
-          });
-          print('Device token refreshed and updated: $newToken');
-        });
-      }
-    } catch (e) {
-      print('Error updating device token in Firestore: $e');
-    }
-  }
-}
-
   Future<void> logout() async {
     await _auth.signOut();
     _user = null;
@@ -131,5 +107,26 @@ class AuthenticationProvider with ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  Future<void> _updateDeviceToken() async {
+    if (_user != null) {
+      try {
+        final token = await _messaging.getToken();
+        if (token != null) {
+          await _firestore.collection('Users').doc(_user!.uid).update({
+            'deviceToken': token,
+          });
+
+          FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+            await _firestore.collection('Users').doc(_user!.uid).update({
+              'deviceToken': newToken,
+            });
+          });
+        }
+      } catch (e) {
+        print('Error updating device token in Firestore: $e');
+      }
+    }
   }
 }

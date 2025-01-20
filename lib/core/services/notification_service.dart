@@ -97,7 +97,7 @@ class NotificationService {
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      // _handleNotificationClick(message);
+      _handleNotificationClick(message);
       _showLocalNotification(message);
     });
 
@@ -215,5 +215,4 @@ class NotificationService {
       print("Error sending notification: $e");
     }
   }
-
 }

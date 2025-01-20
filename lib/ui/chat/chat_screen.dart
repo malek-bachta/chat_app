@@ -113,18 +113,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final trimmedMessageText = chatMessage.text.trim();
 
     if (trimmedMessageText.isEmpty) return;
-    final message = Conversation(
+    final message = Message(
       senderID: chatUser.uid,
       senderEmail: chatUser.email!,
       receiverID: widget.receiverID,
       message: trimmedMessageText,
       timestamp: Timestamp.fromDate(chatMessage.createdAt),
     );
-
     await chatProvider.sendchatMessage(
         chatUser.uid, widget.receiverID, message);
     String email = widget.receiverEmail;
-    if (email.contains('@gmail.com')) {
+    if (email.endsWith('@gmail.com')) {
       await _notificationsHelper.sendNotification(
         deviceToken: widget.receiverToken,
         receiverId: widget.receiverID,
@@ -196,15 +195,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
           ),
           currentUser: currentUser!,
           onSend: (message) {
-            final trimmedText = message.text.trim();
-            if (_isMessageValid(trimmedText)) {
-              final trimmedMessage = ChatMessage(
-                text: trimmedText,
-                user: currentUser!,
-                createdAt: message.createdAt,
-              );
-              _sendMessage(trimmedMessage, chatProvider);
-            }
+            _sendMessage(message, chatProvider);
           },
           messages: messages,
         );
@@ -212,7 +203,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     );
   }
 
-  List<ChatMessage> _generateChatMessagesList(List<Conversation> messages) {
+  List<ChatMessage> _generateChatMessagesList(List<Message> messages) {
     return messages.map((msg) {
       return ChatMessage(
         text: msg.message,

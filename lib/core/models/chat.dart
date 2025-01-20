@@ -3,7 +3,7 @@ import 'package:chat_app/core/models/message.dart';
 class Chat {
   final String id;
   final List<String> participants;
-  final List<Conversation> messages;
+  final List<Message> messages;
 
   Chat({
     required this.id,
@@ -15,7 +15,7 @@ class Chat {
       : id = json['id'],
         participants = List<String>.from(json['participants']),
         messages = (json['messages'] as List<dynamic>)
-            .map((message) => Conversation.fromJson(message as Map<String, dynamic>))
+            .map((message) => Message.fromJson(message as Map<String, dynamic>))
             .toList();
 
   Map<String, dynamic> toJson() {

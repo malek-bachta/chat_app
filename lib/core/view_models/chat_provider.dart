@@ -112,7 +112,7 @@ class ChatProvider with ChangeNotifier {
   Future<void> sendchatMessage(
     String uid1,
     String uid2,
-    Conversation message,
+    Message message,
   ) async {
     String chatRoomId = _generateChatId(uid1, uid2);
     final docRef = _fireStore.collection('chat_rooms').doc(chatRoomId);

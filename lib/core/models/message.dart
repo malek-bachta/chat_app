@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Conversation {
+class Message {
   final String senderID;
   final String senderEmail;
   final String receiverID;
@@ -8,7 +8,7 @@ class Conversation {
   // final DateTime timestamp;
   final Timestamp timestamp;
 
-  Conversation({
+  Message({
     required this.senderID,
     required this.senderEmail,
     required this.receiverID,
@@ -16,8 +16,8 @@ class Conversation {
     required this.timestamp,
   });
 
-  factory Conversation.fromJson(Map<String, dynamic> data) {
-    return Conversation(
+  factory Message.fromJson(Map<String, dynamic> data) {
+    return Message(
       senderID: data['senderID'],
       senderEmail: data['senderEmail'],
       receiverID: data['receiverID'],

@@ -22,10 +22,10 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
+    _chatProvider?.updateUserStatus(true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _chatProvider = Provider.of<ChatProvider>(context, listen: false);
       _chatProvider?.fetchUsers();
-      _chatProvider?.updateUserStatus(true);
     });
   }
 
@@ -77,6 +77,20 @@ class _HomePageState extends State<HomePage> {
     await chatProvider.fetchUsers();
   }
 
+  void _onUserTap(String currentUserId, Map<String, dynamic> user) async {
+    await _chatProvider?.ensureChatExists(currentUserId, user['uid']);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          receiverUserName: user['email'],
+          receiverID: user['uid'],
+          receiverEmail: user['email'],
+          receiverToken: user['deviceToken'],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatProvider>(
@@ -123,27 +137,13 @@ class _HomePageState extends State<HomePage> {
                               return UserTile(
                                 text: user['userName'],
                                 lastMessage: lastMessage,
-                                onTap: () async {
-                                  await chatProvider.ensureChatExists(
-                                    currentUserId ?? '',
-                                    user['uid'],
-                                  );
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => ChatScreen(
-                                        receiverUserName: user['email'],
-                                        receiverID: user['uid'],
-                                        receiverEmail: user['email'],
-                                        receiverToken: user['deviceToken'],
-                                      ),
-                                    ),
-                                  );
-                                },
+                                onTap: () =>
+                                    _onUserTap(currentUserId ?? '', user),
                                 trailing: Icon(
                                   Icons.circle,
                                   color: user['isOnline'] ?? false
                                       ? Colors.green
-                                      : Colors.grey,
+                                      : Colors.red,
                                   size: 12,
                                 ),
                               );
