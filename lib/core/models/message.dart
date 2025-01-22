@@ -5,7 +5,6 @@ class Message {
   final String senderEmail;
   final String receiverID;
   final String message;
-  // final DateTime timestamp;
   final Timestamp timestamp;
 
   Message({

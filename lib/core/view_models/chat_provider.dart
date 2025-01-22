@@ -35,7 +35,7 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
-  /// Send a message
+  /// fech conversation between two users
   Stream<Chat?> getChatData(String uid1, String uid2) {
     String chatRoomId = _generateChatId(uid1, uid2);
     return _fireStore
@@ -51,7 +51,19 @@ class ChatProvider with ChangeNotifier {
     });
   }
 
-  /// Update user status (online/offline)
+  /// Fetch users and listen for changes in their online status
+  void listenToUserStatus() {
+    _fireStore.collection('Users').snapshots().listen((snapshot) {
+      _users = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['uid'] = doc.id;
+        return data;
+      }).toList();
+      notifyListeners();
+    });
+  }
+
+  /// Update the current user's online status
   Future<void> updateUserStatus(bool isOnline) async {
     try {
       final user = _auth.currentUser;
@@ -60,17 +72,19 @@ class ChatProvider with ChangeNotifier {
           'isOnline': isOnline,
           'lastSeen': isOnline ? null : Timestamp.now(),
         });
-        notifyListeners();
       }
     } catch (e) {
       logError('updateUserStatus', e.toString());
     }
   }
 
-  /// Check if a chat exists
-  String _generateChatId(String uid1, String uid2) {
-    final ids = [uid1, uid2]..sort();
-    return ids.join('_');
+  Future<bool> isUserOnline(String userId) async {
+    final userDoc = await _fireStore.collection('Users').doc(userId).get();
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      return data?['isOnline'] ?? false;
+    }
+    return false;
   }
 
   /// Log error utility
@@ -78,35 +92,54 @@ class ChatProvider with ChangeNotifier {
     print('$functionName: $error');
   }
 
-  // Ensure chat exists between two users
-  Future<void> ensureChatExists(String userId, String otherUserId) async {
+  /// generate conversation id
+  String _generateChatId(String uid1, String uid2) {
+    final ids = [uid1, uid2]..sort();
+    return ids.join('_');
+  }
+
+  /// Check if a chat room exists between two users
+  Future<bool> checkChatRoomIfExists(String userId, String otherUserId) async {
+    final chatId = _generateChatId(userId, otherUserId);
+    final chatDoc = await _fireStore.collection('chat_rooms').doc(chatId).get();
+
+    return chatDoc.exists;
+  }
+
+  /// Create a chat room between two users
+  Future<void> createChatRoom(String userId, String otherUserId) async {
     final chatId = _generateChatId(userId, otherUserId);
     final chatDoc = _fireStore.collection('chat_rooms').doc(chatId);
 
-    final existingChat = await chatDoc.get();
-    if (!existingChat.exists) {
-      await chatDoc.set({
-        'id': chatId,
-        'participants': [userId, otherUserId],
-        'messages': [],
-      });
+    await chatDoc.set({
+      'id': chatId,
+      'participants': [userId, otherUserId],
+      'messages': [],
+    });
+  }
+
+  Future<void> handleChatRooms(String userId, String otherUserId) async {
+    final chatExists = await checkChatRoomIfExists(userId, otherUserId);
+    if (!chatExists) {
+      await createChatRoom(userId, otherUserId);
     }
   }
 
   // Get the last message for a specific user
-  Future<String> getLastMessage(String userId, String otherUserId) async {
+  Stream<List<Map<String, dynamic>>> getLastMessagesStream(
+      String userId, String otherUserId) {
     final chatId = _generateChatId(userId, otherUserId);
-    final chatDoc = await _fireStore.collection('chat_rooms').doc(chatId).get();
-
-    if (chatDoc.exists) {
-      final data = chatDoc.data() as Map<String, dynamic>;
-      final messages = data['messages'] as List<dynamic>;
-      if (messages.isNotEmpty) {
-        final lastMessage = messages.last as Map<String, dynamic>;
-        return lastMessage['message'] ?? 'No messages yet';
-      }
-    }
-    return 'No messages yet';
+    return _fireStore
+        .collection('chat_rooms')
+        .doc(chatId)
+        .snapshots()
+        .map((snapshot) {
+      final data = snapshot.data();
+      return (data?['messages'] as List<dynamic>?)
+              ?.map((e) => e as Map<String, dynamic>)
+              .toList() ??
+          [];
+    });
   }
 
   Future<void> sendchatMessage(

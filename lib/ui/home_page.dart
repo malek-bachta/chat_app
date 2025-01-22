@@ -15,7 +15,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   ChatProvider? _chatProvider;
 
   @override
@@ -25,14 +25,29 @@ class _HomePageState extends State<HomePage> {
     _chatProvider?.updateUserStatus(true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      _chatProvider?.listenToUserStatus();
       _chatProvider?.fetchUsers();
+      _chatProvider?.updateUserStatus(true);
     });
   }
 
   @override
   void dispose() {
     _chatProvider?.updateUserStatus(false);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_chatProvider != null) {
+      if (state == AppLifecycleState.resumed) {
+        _chatProvider?.updateUserStatus(true);
+      } else if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.detached) {
+        _chatProvider?.updateUserStatus(false);
+      }
+    }
   }
 
   void _logout(BuildContext context) async {
@@ -78,11 +93,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onUserTap(String currentUserId, Map<String, dynamic> user) async {
-    await _chatProvider?.ensureChatExists(currentUserId, user['uid']);
+    await _chatProvider?.handleChatRooms(currentUserId, user['uid']);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ChatScreen(
-          receiverUserName: user['email'],
+          receiverUserName: user['userName'],
           receiverID: user['uid'],
           receiverEmail: user['email'],
           receiverToken: user['deviceToken'],
@@ -126,13 +141,34 @@ class _HomePageState extends State<HomePage> {
                             return const SizedBox.shrink();
                           }
 
-                          return FutureBuilder<String>(
-                            future: chatProvider.getLastMessage(
+                          return StreamBuilder<List<Map<String, dynamic>>>(
+                            stream: chatProvider.getLastMessagesStream(
                               currentUserId ?? '',
                               user['uid'],
                             ),
                             builder: (context, snapshot) {
-                              final lastMessage = snapshot.data ?? 'Loading...';
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return UserTile(
+                                  text: user['userName'],
+                                  lastMessage: 'Loading...',
+                                  onTap: () =>
+                                      _onUserTap(currentUserId ?? '', user),
+                                  trailing: Icon(
+                                    Icons.circle,
+                                    color: user['isOnline'] ?? true
+                                        ? Colors.green
+                                        : Colors.red,
+                                    size: 12,
+                                  ),
+                                );
+                              }
+
+                              final messages = snapshot.data ?? [];
+                              final lastMessage = messages.isNotEmpty
+                                  ? messages.last['message'] ??
+                                      'No messages yet'
+                                  : 'No messages yet';
 
                               return UserTile(
                                 text: user['userName'],

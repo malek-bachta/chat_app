@@ -13,7 +13,7 @@ class NotificationsHelper {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   Future<void> initNotifications() async {
-    _requestPermission();
+    await _requestPermission();
     String? deviceToken = await _firebaseMessaging.getToken();
     if (deviceToken != null) {
       final prefs = await SharedPreferences.getInstance();
@@ -26,28 +26,23 @@ class NotificationsHelper {
         "===================Device FirebaseMessaging Token====================");
   }
 
+  void handleMessages(RemoteMessage? message) {
+    if (message != null) {
+      print(
+          'Notification received: ${message.notification?.title} - ${message.notification?.body}');
+    }
+  }
+
   Future<void> _requestPermission() async {
     try {
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
-        provisional: false,
         sound: true,
-        announcement: false,
-        carPlay: false,
-        criticalAlert: false,
       );
-
       print('Permission granted: ${settings.authorizationStatus}');
     } catch (e) {
       print('Error requesting permission: $e');
-    }
-  }
-
-  void handleMessages(RemoteMessage? message) {
-    if (message != null) {
-      print(
-          'Notification received: ${message.notification?.title} - ${message.notification?.body}');
     }
   }
 
@@ -112,13 +107,17 @@ class NotificationsHelper {
         },
         "android": {
           "notification": {
+            "channel_id": "high_importance_channel",
             "notification_priority": "PRIORITY_MAX",
             "sound": "default"
           }
         },
         "apns": {
           "payload": {
-            "aps": {"content_available": true}
+            "aps": {
+              "alert": {"title": userName, "body": message},
+              "content_available": true
+            }
           }
         },
         "data": {"id": receiverId, "click_action": "FLUTTER_NOTIFICATION_CLICK"}

@@ -58,20 +58,12 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _initializeNotifications() async {
-    // Initialize notifications
     await _notificationsHelper.initNotifications();
 
-    // Handle notifications in foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _handleIncomingNotification(message);
-    });
-
-    // Handle notifications when app is opened from a background state
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _handleIncomingNotification(message);
     });
 
-    // Handle background notifications
     _notificationsHelper.handleBackgroundNotifications();
   }
 
@@ -94,18 +86,6 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
-  bool _isMessageValid(String message) {
-    final trimmedMessage = message.trim();
-
-    if (trimmedMessage.isEmpty) {
-      return false;
-    } else if (trimmedMessage.length > 500) {
-      return false;
-    }
-
-    return true;
-  }
-
   Future<void> _sendMessage(
     ChatMessage chatMessage,
     ChatProvider chatProvider,
@@ -113,6 +93,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final trimmedMessageText = chatMessage.text.trim();
 
     if (trimmedMessageText.isEmpty) return;
+
     final message = Message(
       senderID: chatUser.uid,
       senderEmail: chatUser.email!,
@@ -120,16 +101,22 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       message: trimmedMessageText,
       timestamp: Timestamp.fromDate(chatMessage.createdAt),
     );
+
     await chatProvider.sendchatMessage(
         chatUser.uid, widget.receiverID, message);
-    String email = widget.receiverEmail;
-    if (email.endsWith('@gmail.com')) {
-      await _notificationsHelper.sendNotification(
-        deviceToken: widget.receiverToken,
-        receiverId: widget.receiverID,
-        userName: _sanitizeText(chatUser.email!),
-        message: message.message,
-      );
+
+    final isOnline = await chatProvider.isUserOnline(widget.receiverID);
+
+    if (isOnline) {
+      String email = widget.receiverEmail;
+      if (email.endsWith('@gmail.com')) {
+        await _notificationsHelper.sendNotification(
+          deviceToken: widget.receiverToken,
+          receiverId: widget.receiverID,
+          userName: _sanitizeText(chatUser.email!),
+          message: message.message,
+        );
+      }
     }
 
     _scrollToBottom();
